@@ -3,3 +3,4 @@ devenv/*
 output/*
 .environment/*
 *.json
+*.pyc
