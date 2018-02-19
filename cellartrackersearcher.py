@@ -79,6 +79,7 @@ output.write(header.encode('utf8'))
 for key,value in groupby(parsed_items, lambda w : w.producer):
     wvinatges=list(value)
     scoreless = list(filter(lambda w: w.score != "", wvinatges))
+    value="$0"
     if len(scoreless) >= 10:
         #avergageprice=wprice.WinePrice(key)
         #value=avergageprice.getprice()
