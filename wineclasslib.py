@@ -26,7 +26,7 @@ def lazy_property(fn):
 class Wine:
     def __init__(self, name, region, winetype):
         
-        self.__score = 0
+        self.__score = ""
         self.__bottlecount = 0
         self.__rawname = name
         self.__rawtype = winetype.lower()
@@ -71,7 +71,7 @@ class Wine:
     #Producer
     @lazy_property
     def producer(self):
-        print (self.__rawname)
+        #print (self.__rawname)
 
         if not self.__vb:
             self.vintage

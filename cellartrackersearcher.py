@@ -4,6 +4,7 @@ import re
 import operator
 from itertools import groupby
 import wineclasslib as wlib
+import wineprice as wprice
 #import request
 
 #url = 
@@ -69,16 +70,38 @@ for root, dirs, files in os.walk("./webpages"):
                 items = []
         htmldoc.close()
 
-#parsed_items.sort(key=operator.attrgetter("producer"), reverse=False)
+parsed_items.sort(key=operator.attrgetter("producer"), reverse=False)
 
-output=open("./output/st-emilion.csv", "w", encoding="ISO-8859-1")
+output=open("./output/st-emilion.txt", "wb")
+header="Vintage,Château,Type,Score,Bottel Count,Price\n"
+output.write(header.encode('utf8'))
 
-for bottle in parsed_items:
-    try:
-        output.write("%s@%s@%s@%s@%s\n" %(bottle.vintage, bottle.producer, bottle.type, bottle.score, bottle.count))
-    except UnicodeEncodeError:
-        print ("UnicodeEncodeError wine: %s" %(bottle.producer))
-output.close()
+for key,value in groupby(parsed_items, lambda w : w.producer):
+    wvinatges=list(value)
+    scoreless = list(filter(lambda w: w.score != "", wvinatges))
+    if len(scoreless) >= 10:
+        #avergageprice=wprice.WinePrice(key)
+        #value=avergageprice.getprice()
+        for bottle in wvinatges:
+            try:
+                line = "{0},{1},{2},{3},{4},{5}\n".format(
+                    bottle.vintage, bottle.producer, 
+                    bottle.type, bottle.score, bottle.count, value)
+                output.write(line.encode('utf8'))
+            except UnicodeEncodeError:
+                print ("UnicodeEncodeError wine: {0}".format(key))
+    elif not wvinatges:
+        print ("No wine found for: {0}".format(key))
+    else:
+        print ("{0} count {1} of 10".format(key, len(scoreless)))
+output.close()  
+
+#for key,value in groupby(filter( lambda w: w. , parsed_items)):
+#    try:
+#        output.write("%s@%s@%s@%s@%s\n" %(bottle.vintage, bottle.producer, bottle.type, bottle.score, bottle.count))
+#    except UnicodeEncodeError:
+#        print ("UnicodeEncodeError wine: %s" %(bottle.producer))
+#output.close()
 
 
 #for key, value in groupby(filter(lambda x: x.varaietal == "unknow", parsed_items), key=lambda w: w.producer):
