@@ -14,6 +14,8 @@ import wineclasslib as wlib
 
 
 #content = urllib2.urlopen(url).read()
+parsed_items = []
+
 for root, dirs, files in os.walk("./webpages"):
     for filename in files:
         print ("%s" % (filename))
@@ -21,12 +23,13 @@ for root, dirs, files in os.walk("./webpages"):
         soup = BeautifulSoup(htmldoc,'html.parser')
 
         items = []
-        parsed_items = []
         main_table = soup.find('table', {'id':'main_table'})
         for row in main_table.findAll('tr'):
-            name = ""
-            region = ""
+            name ="" 
+            region=""
+            score=""
             winetype = ""
+            bottelcount = 0
             for column in row.findAll('td'):
                 if column.has_attr('class') and column['class'] == ['type']:
                     winetype = column.find('a').attrs['title']
@@ -41,12 +44,14 @@ for root, dirs, files in os.walk("./webpages"):
 
                         name = "%s %s" % (vinatge, producer)
                         region = column.find('span', {'class':'el loc'}).text
-
                     else:
                         print ("say what")
                 elif column.has_attr('class') and column['class'] == ['dates']:
-                    m = re.search('[0-9.]+', column.find('span', {'class':'el gty'}).contents[0])
+                    m = re.search('[0-9,]+', column.find('span', {'class':'el gty'}).contents[0])
                     items.append(m.group(0))
+                    if m.group(0).replace(",","").isdigit():
+                        bottelcount = int(m.group(0).replace(",",""))
+                         
                 elif column.has_attr('class') and column['class'] == ['score']:
                     soupresult=column.find('a', {'class':'action'})
                     if soupresult is not None:
@@ -54,15 +59,28 @@ for root, dirs, files in os.walk("./webpages"):
                         score = m.group(0)
                         items.append(score)
             if items:
-                parsed_items.append(wlib.Wine(name, region, winetype))
+                winebottel=wlib.Wine(name, region, winetype) 
+                if score != "":
+                    winebottel.addscore(float(score))
+                winebottel.updatebottlecount(bottelcount)
+
+                parsed_items.append(winebottel)
                 #parsed_items.append("@".join(items).replace('\n',''))
                 items = []
         htmldoc.close()
-        break
 
-parsed_items.sort(key=operator.attrgetter("producer"), reverse=False)
+#parsed_items.sort(key=operator.attrgetter("producer"), reverse=False)
 
-for key, value in groupby(filter(lambda x: x.varaietal == "unknow", parsed_items), key=lambda w: w.producer):
-    print (key)
-    for wine in value:
-        print ("\t %s %s" % (wine.vintage, wine.varaietal))
+output=open("./output/st-emilion.csv", "w", encoding="ISO-8859-1")
+
+for bottle in parsed_items:
+    try:
+        output.write("%s@%s@%s@%s@%s\n" %(bottle.vintage, bottle.producer, bottle.type, bottle.score, bottle.count))
+    except UnicodeEncodeError:
+        print ("UnicodeEncodeError wine: %s" %(bottle.producer))
+output.close()
+
+
+#for key, value in groupby(filter(lambda x: x.varaietal == "unknow", parsed_items), key=lambda w: w.producer):
+#    for wine in value:
+#        print ("\t %s %s" % (wine.vintage, wine.varaietal))

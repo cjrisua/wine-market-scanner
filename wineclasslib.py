@@ -25,35 +25,47 @@ def lazy_property(fn):
 
 class Wine:
     def __init__(self, name, region, winetype):
-        #print name
         
+        self.__score = 0
+        self.__bottlecount = 0
         self.__rawname = name
-        self.__vb = []
         self.__rawtype = winetype.lower()
+
+        self.__vb = []
+        self.__varaietal = []
+        self.__producer = []
+        
         
         self.__rawterroir  = list(map(lambda x: x.strip(), region.split(">")))
 
-        self.__country = self.__rawterroir[0] 
-        self.__region = self.__rawterroir[1]
-        self.__appelation = self.__rawterroir[2]
+        if self.__rawterroir:
+            if len(self.__rawterroir) > 0:
+                self.__country = self.__rawterroir[0] 
+            if len(self.__rawterroir) > 1:
+                self.__region = self.__rawterroir[1]
+            if len(self.__rawterroir) > 2:
+                self.__appelation = self.__rawterroir[len(self.__rawterroir) - 2]
+            if len(self.__rawterroir) > 3:
+                self.__appelation = self.__rawterroir[len(self.__rawterroir) - 1]
         
         if self.__rawterroir[0] == "France":
-            if self.__rawterroir[1] == "Bordeaux":
-                self.__rawterroir = "Red Blend"
-
-        self.__varaietal = []
-        self.__producer = []
+            if len(self.__rawterroir) > 1  and self.__rawterroir[1] == "Bordeaux":
+                self.__varaietal = "Red Blend"
 
     #vintage Bottle
     @lazy_property
     def vintage(self):
-        match = re.search('^(?P<vintage>[0-9]+)\s+(?P<name>.+?)$', self.__rawname)
-        year = match.group('vintage')
-        if int(year) > 1600:
+        match = re.search('^(?P<vintage>([0-9]+|NV))\s+(?P<name>.+?)$', self.__rawname)
+        
+        if match is None:
             self.__vb = 0
         else:
-            self.__rawname = self.__rawname.replace(year,"|:|YEAR|:|")
-            self.__vb = year
+            year = match.group('vintage')
+            if year == "NV" or year.isdigit():
+                self.__rawname = self.__rawname.replace(year,"|:|YEAR|:|")
+                self.__vb = year
+            else:
+                self.__vb = 0
         return self.__vb
 
     #Producer
@@ -67,7 +79,7 @@ class Wine:
             self.varaietal
         
         if self.__country == "France":
-            match = re.search('^\|\:\|YEAR\|\:\|(?P<producer>.+?)', self.__rawname)
+            match = re.search('^\|\:\|YEAR\|\:\|(?P<producer>.+?)$', self.__rawname)
         else:
             match = re.search('^\|\:\|YEAR\|\:\|(?P<producer>.+?)((\|\:\|VARAIETAL\|\:\|)(.+?)|(\|\:\|VARAIETAL\|\:\|)|$)$', self.__rawname)
         house = match.group('producer').strip()
@@ -77,6 +89,10 @@ class Wine:
     def varaietal(self):
         grapes = []
         pword = ""
+
+        if self.country == "France":
+            return "Red Blend"
+
         for word in re.split("\\s+", self.__rawname):
             grapes = self.findvaraietal("%s %s" % (pword,word))
             if grapes:
@@ -122,7 +138,20 @@ class Wine:
             return self.__rawterroir[3]
         else:
             return "unknow"
+    @lazy_property
+    def score(self):
+        return self.__score
 
+    @lazy_property
+    def count(self):
+        return self.__bottlecount
+
+    def addscore(self, winescore):
+        self.__score =  float(winescore)
+
+    def updatebottlecount(self, bottlecount):
+        self.__bottlecount =  int(bottlecount)
+        
     def findvaraietal(self, name):
         results = list(filter(lambda g: g.startswith(name.strip()) , VaraietalType.grapes))  
         return results
